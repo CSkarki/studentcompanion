@@ -22,6 +22,10 @@ module.exports = {
       {
         test: /\.css$/,
         use: ['style-loader', 'css-loader', 'postcss-loader']
+      },
+      {
+        test: /\.(png|svg|jpg|jpeg|gif|ico)$/i,
+        type: 'asset/resource'
       }
     ]
   },
@@ -31,17 +35,27 @@ module.exports = {
   plugins: [
     new CopyPlugin({
       patterns: [
-        { from: 'public/manifest.json', to: '.' }
+        { 
+          from: 'public',
+          to: '.',
+          globOptions: {
+            ignore: ['**/index.html']
+          }
+        }
       ]
     }),
     new HtmlWebpackPlugin({
       template: 'public/index.html',
-      inject: 'body'
+      inject: 'body',
+      filename: 'index.html'
     })
   ],
   devServer: {
     historyApiFallback: true,
     hot: true,
-    port: 3000
+    port: 3000,
+    static: {
+      directory: path.join(__dirname, 'public')
+    }
   }
 }; 

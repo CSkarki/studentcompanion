@@ -8,6 +8,7 @@ import {
   PlayCircle, PauseCircle, Volume2, VolumeX, RefreshCw,
   Share, Star, Award, TrendingUp, PieChart, Archive
 } from 'lucide-react';
+import { AITutor } from './components/AITutor';
 
 // Add interfaces for type safety
 interface UserType {
@@ -90,6 +91,8 @@ const StudentCompanionApp = () => {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
+  const [selectedDetail, setSelectedDetail] = useState<{ type: string; data: any } | null>(null);
+  const [showCompose, setShowCompose] = useState(false);
 
   // Sample data
   const [documents] = useState<DocumentType[]>([
@@ -167,6 +170,25 @@ const StudentCompanionApp = () => {
     }, 1000);
   }, []);
 
+  // Reusable Back Button
+  const BackButton = () => (
+    <button onClick={() => setCurrentScreen('dashboard')} className="mb-4 text-blue-600 hover:underline">&larr; Back</button>
+  );
+
+  // Compose Email Component
+  const ComposeEmail = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md relative">
+        <button onClick={() => setShowCompose(false)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">&times;</button>
+        <h2 className="text-xl font-bold mb-4">Compose Email</h2>
+        <input className="w-full mb-2 px-3 py-2 border rounded" placeholder="To" />
+        <input className="w-full mb-2 px-3 py-2 border rounded" placeholder="Subject" />
+        <textarea className="w-full mb-4 px-3 py-2 border rounded" placeholder="Message" rows={5} />
+        <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
+      </div>
+    </div>
+  );
+
   // Navigation Component
   const Navigation = () => (
     <div className="bg-white border-r border-gray-200 w-64 h-screen fixed left-0 top-0 overflow-y-auto z-10">
@@ -182,9 +204,10 @@ const StudentCompanionApp = () => {
         </div>
 
         <nav className="space-y-2">
-          {navigationItems.map((item: NavigationItem) => (
-            <NavItem key={item.label} {...item} />
-          ))}
+          <NavItem Icon={Home} label="Home" active={currentScreen === 'dashboard'} onClick={() => setCurrentScreen('dashboard')} />
+          <NavItem Icon={BookOpen} label="Notes" active={currentScreen === 'notes'} onClick={() => setCurrentScreen('notes')} />
+          <NavItem Icon={MessageSquare} label="Chat" active={currentScreen === 'chat'} onClick={() => setCurrentScreen('chat')} />
+          <NavItem Icon={Brain} label="AI Tutor" active={currentScreen === 'ai-tutor'} onClick={() => setCurrentScreen('ai-tutor')} />
         </nav>
       </div>
 
@@ -351,21 +374,21 @@ const StudentCompanionApp = () => {
         <div className="bg-white rounded-xl shadow-sm border p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
           <div className="space-y-3">
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer" onClick={() => { setSelectedDetail({ type: 'activity', data: documents[0] }); setCurrentScreen('detail'); }}>
               <FileText className="w-5 h-5 text-blue-600" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">Biology Chapter 12.pdf processed</p>
                 <p className="text-xs text-gray-500">2 hours ago</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer" onClick={() => { setSelectedDetail({ type: 'activity', data: handwrittenNotes[1] }); setCurrentScreen('detail'); }}>
               <Camera className="w-5 h-5 text-purple-600" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">Physics formulas extracted from notes</p>
                 <p className="text-xs text-gray-500">5 hours ago</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer" onClick={() => { setSelectedDetail({ type: 'activity', data: emails.filter(e => e.classification === 'academic') }); setCurrentScreen('detail'); }}>
               <Mail className="w-5 h-5 text-orange-600" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">4 new academic emails classified</p>
@@ -379,7 +402,7 @@ const StudentCompanionApp = () => {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Tasks</h2>
           <div className="space-y-3">
             {studyPlanner.filter(task => !task.completed).slice(0, 3).map(task => (
-              <div key={task.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+              <div key={task.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer" onClick={() => { setSelectedDetail({ type: 'task', data: task }); setCurrentScreen('detail'); }}>
                 <div className={`w-3 h-3 rounded-full ${task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">{task.task}</p>
@@ -396,6 +419,7 @@ const StudentCompanionApp = () => {
   // Document Center Component
   const DocumentCenter = () => (
     <div className="ml-64 p-6 space-y-6">
+      <BackButton />
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Document Center</h1>
         <div className="flex space-x-2">
@@ -472,58 +496,37 @@ const StudentCompanionApp = () => {
   // AI Chat Interface Component
   const AIChat = () => {
     const [messages, setMessages] = useState([
-      { id: 1, type: 'ai', content: 'Hello! I can help you with questions about your uploaded documents. What would you like to know?' },
-      { id: 2, type: 'user', content: 'Can you summarize the Biology Chapter 12 document?' },
-      { id: 3, type: 'ai', content: 'Based on your Biology Chapter 12 document, here\'s a summary:\n\nThe chapter focuses on cell division, specifically mitosis. Key topics include:\n• The cell cycle phases (G1, S, G2, M)\n• Mitosis stages: prophase, metaphase, anaphase, telophase\n• Chromosome behavior during division\n• Cell cycle checkpoints and regulation\n\nWould you like me to explain any specific part in more detail?' },
-      { id: 4, type: 'user', content: 'What are the main differences between mitosis and meiosis?' },
-      { id: 5, type: 'ai', content: 'Great question! Here are the key differences between mitosis and meiosis:\n\n**Mitosis:**\n• Produces 2 identical diploid cells\n• Used for growth and repair\n• One division cycle\n• Maintains chromosome number\n\n**Meiosis:**\n• Produces 4 genetically different haploid gametes\n• Used for sexual reproduction\n• Two division cycles (meiosis I & II)\n• Reduces chromosome number by half\n• Includes crossing over for genetic variation\n\nThis information comes from your uploaded Biology materials. Need more details on any aspect?' }
+      { id: 1, type: 'user', content: 'Hi! Can you help me understand photosynthesis?' },
+      { id: 2, type: 'ai', content: 'Of course! Photosynthesis is the process by which green plants use sunlight to synthesize food from carbon dioxide and water.' },
+      { id: 3, type: 'user', content: 'What is the main equation for photosynthesis?' },
+      { id: 4, type: 'ai', content: 'The main equation is: 6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂.' },
+      { id: 5, type: 'user', content: 'Why is it important?' },
+      { id: 6, type: 'ai', content: 'It provides oxygen and is the foundation for most food chains on Earth.' },
     ]);
     const [newMessage, setNewMessage] = useState('');
 
     const sendMessage = () => {
       if (!newMessage.trim()) return;
-      
-      setMessages([...messages, 
-        { id: messages.length + 1, type: 'user', content: newMessage },
-        { id: messages.length + 2, type: 'ai', content: 'I\'m processing your question about the documents. This is a demo response showing how the AI would analyze your uploaded materials and provide contextual answers.' }
-      ]);
+      setMessages([...messages, { id: messages.length + 1, type: 'user', content: newMessage }, { id: messages.length + 2, type: 'ai', content: 'Thanks for your question! (This is a demo answer.)' }]);
       setNewMessage('');
     };
 
     return (
       <div className="ml-64 p-6 h-screen flex flex-col">
+        <BackButton />
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">AI Study Assistant</h1>
-          <div className="flex space-x-2">
-            <button className="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg text-sm">Summarize</button>
-            <button className="px-4 py-2 bg-green-100 text-green-800 rounded-lg text-sm">Extract Tables</button>
-            <button className="px-4 py-2 bg-purple-100 text-purple-800 rounded-lg text-sm">Generate Quiz</button>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900">Student Chat</h1>
         </div>
-
         <div className="flex-1 bg-white rounded-xl shadow-sm border flex flex-col">
-          <div className="p-4 border-b">
-            <div className="flex items-center space-x-2">
-              <Brain className="w-5 h-5 text-blue-600" />
-              <span className="font-medium text-gray-900">AI Assistant</span>
-              <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Online</span>
-            </div>
-          </div>
-
           <div className="flex-1 p-4 overflow-y-auto space-y-4">
             {messages.map(message => (
               <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                  message.type === 'user' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-900'
-                }`}>
+                <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.type === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'}`}>
                   <p className="whitespace-pre-line">{message.content}</p>
                 </div>
               </div>
             ))}
           </div>
-
           <div className="p-4 border-t">
             <div className="flex space-x-2">
               <input
@@ -531,7 +534,7 @@ const StudentCompanionApp = () => {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Ask me anything about your documents..."
+                placeholder="Type your message..."
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <button
@@ -550,6 +553,7 @@ const StudentCompanionApp = () => {
   // Handwritten Notes Component
   const HandwrittenNotes = () => (
     <div className="ml-64 p-6 space-y-6">
+      <BackButton />
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Handwritten Notes</h1>
         <div className="flex space-x-2">
@@ -616,6 +620,155 @@ const StudentCompanionApp = () => {
     </div>
   );
 
+  // Email Component
+  const EmailCenter = () => (
+    <div className="ml-64 p-6 space-y-6">
+      <BackButton />
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900">Email Center</h1>
+        <div className="flex space-x-2">
+          <button onClick={() => setShowCompose(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+            <Mail className="w-4 h-4" />
+            <span>Compose</span>
+          </button>
+          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2">
+            <Filter className="w-4 h-4" />
+            <span>Filter</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Email List */}
+      <div className="bg-white rounded-xl shadow-sm border">
+        <div className="p-6 border-b">
+          <h2 className="text-lg font-semibold text-gray-900">Your Emails</h2>
+        </div>
+        <div className="divide-y">
+          {emails.map(email => (
+            <div key={email.id} className="p-6 hover:bg-gray-50 cursor-pointer" onClick={() => { setSelectedDetail({ type: 'email', data: email }); setCurrentScreen('detail'); }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className={`p-2 rounded-lg ${
+                    email.priority === 'high' ? 'bg-red-100' : 
+                    email.priority === 'medium' ? 'bg-yellow-100' : 
+                    'bg-green-100'
+                  }`}>
+                    <Mail className={`w-6 h-6 ${
+                      email.priority === 'high' ? 'text-red-600' : 
+                      email.priority === 'medium' ? 'text-yellow-600' : 
+                      'text-green-600'
+                    }`} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{email.subject}</h3>
+                    <p className="text-sm text-gray-600">{email.sender} • {email.date}</p>
+                    <p className="text-sm text-gray-500 mt-1">{email.body}</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    email.classification === 'academic' ? 'bg-blue-100 text-blue-800' : 
+                    email.classification === 'notification' ? 'bg-green-100 text-green-800' : 
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {email.classification}
+                  </span>
+                  <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={e => e.stopPropagation()}>
+                    <Eye className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={e => e.stopPropagation()}>
+                    <Trash2 className="w-4 h-4 text-gray-600" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {showCompose && <ComposeEmail />}
+    </div>
+  );
+
+  // Study Planner Component
+  const StudyPlanner = () => (
+    <div className="ml-64 p-6 space-y-6">
+      <BackButton />
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900">Study Planner</h1>
+        <div className="flex space-x-2">
+          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+            <Plus className="w-4 h-4" />
+            <span>Add Task</span>
+          </button>
+          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2">
+            <Filter className="w-4 h-4" />
+            <span>Filter</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Task List */}
+      <div className="bg-white rounded-xl shadow-sm border">
+        <div className="p-6 border-b">
+          <h2 className="text-lg font-semibold text-gray-900">Your Tasks</h2>
+        </div>
+        <div className="divide-y">
+          {studyPlanner.map(task => (
+            <div key={task.id} className="p-6 hover:bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className={`w-3 h-3 rounded-full ${
+                    task.priority === 'high' ? 'bg-red-500' : 
+                    task.priority === 'medium' ? 'bg-yellow-500' : 
+                    'bg-green-500'
+                  }`}></div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{task.task}</h3>
+                    <p className="text-sm text-gray-600">Due: {task.dueDate} • {task.estimatedTime}</p>
+                    <p className="text-sm text-gray-500 mt-1">Category: {task.category}</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button 
+                    onClick={() => {
+                      const updatedTasks = studyPlanner.map(t => 
+                        t.id === task.id ? {...t, completed: !t.completed} : t
+                      );
+                      setStudyPlanner(updatedTasks);
+                    }}
+                    className={`p-2 rounded-lg ${
+                      task.completed ? 'bg-green-100 text-green-600' : 'hover:bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                  </button>
+                  <button className="p-2 hover:bg-gray-100 rounded-lg">
+                    <Trash2 className="w-4 h-4 text-gray-600" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Detail View Component
+  const DetailView = () => {
+    if (!selectedDetail) return null;
+    const { type, data } = selectedDetail;
+    return (
+      <div className="ml-64 p-6">
+        <BackButton />
+        <div className="bg-white rounded-xl shadow-sm border p-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">{type === 'task' ? 'Task Details' : type === 'activity' ? 'Activity Details' : 'Details'}</h1>
+          <pre className="whitespace-pre-wrap text-gray-800">{JSON.stringify(data, null, 2)}</pre>
+        </div>
+      </div>
+    );
+  };
+
   // Main App Render
   return (
     <div className="min-h-screen bg-gray-50">
@@ -628,6 +781,20 @@ const StudentCompanionApp = () => {
           {currentScreen === 'documents' && <DocumentCenter />}
           {currentScreen === 'chat' && <AIChat />}
           {currentScreen === 'notes' && <HandwrittenNotes />}
+          {currentScreen === 'emails' && <EmailCenter />}
+          {currentScreen === 'planner' && <StudyPlanner />}
+          {currentScreen === 'detail' && <DetailView />}
+          {currentScreen === 'ai-tutor' && user && (
+            <div className="ml-64 p-6 h-screen">
+              <AITutor user={{
+                uid: 'demo',
+                name: user.name,
+                email: user.email,
+                authProvider: 'firebase',
+                createdAt: new Date()
+              }} />
+            </div>
+          )}
         </>
       )}
     </div>
